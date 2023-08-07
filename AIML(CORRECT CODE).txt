@@ -1,0 +1,464 @@
+1.
+import pandas as pd
+import numpy as np
+
+#to read the data in the csv file
+data = pd.read_csv("ws.csv")
+print(data,"n")
+
+#making an array of all the attributes
+d = np.array(data)[:,:-1]
+print("n The attributes are: ",d)
+
+#segragating the target that has positive and negative examples
+target = np.array(data)[:,-1]
+print("n The target is: ",target)
+
+#training function to implement find-s algorithm
+def train(c,t):
+    for i, val in enumerate(t):
+        if val == "Yes":
+            specific_hypothesis = c[i].copy()
+            break
+
+    for i, val in enumerate(c):
+        if t[i] == "Yes":
+            for x in range(len(specific_hypothesis)):
+                if val[x] != specific_hypothesis[x]:
+                    specific_hypothesis[x] = '?'
+                else:
+                    pass
+
+    return specific_hypothesis
+
+#obtaining the final hypothesis
+print("n The final hypothesis is:",train(d,target))
+
+2.
+import numpy as np 
+import pandas as pd
+
+data = pd.read_csv("enjoysport.csv")
+concepts = np.array(data.iloc[:,0:-1])
+print("\nInstances are:\n",concepts)
+target = np.array(data.iloc[:,-1])
+print("\nTarget Values are: ",target)
+
+def learn(concepts, target): 
+    specific_h = concepts[0].copy()
+    print("\nInitialization of specific_h and genearal_h")
+    print("\nSpecific Boundary: ", specific_h)
+    general_h = [["?" for i in range(len(specific_h))] for i in range(len(specific_h))]
+    print("\nGeneric Boundary: ",general_h)  
+
+    for i, h in enumerate(concepts):
+        print("\nInstance", i+1 , "is ", h)
+        if target[i] == "yes":
+            print("Instance is Positive ")
+            for x in range(len(specific_h)): 
+                if h[x]!= specific_h[x]:                    
+                    specific_h[x] ='?'                     
+                    general_h[x][x] ='?'
+
+        if target[i] == "no":            
+            print("Instance is Negative ")
+            for x in range(len(specific_h)): 
+                if h[x]!= specific_h[x]:                    
+                    general_h[x][x] = specific_h[x]                
+                else:                    
+                    general_h[x][x] = '?'        
+
+        print("Specific Bundary after ", i+1, "Instance is ", specific_h)         
+        print("Generic Boundary after ", i+1, "Instance is ", general_h)
+        print("\n")
+
+    indices = [i for i, val in enumerate(general_h) if val == ['?', '?', '?', '?', '?', '?']]    
+    for i in indices:   
+        general_h.remove(['?', '?', '?', '?', '?', '?']) 
+    return specific_h, general_h 
+
+s_final, g_final = learn(concepts, target)
+
+print("Final Specific_h: ", s_final, sep="\n")
+print("Final General_h: ", g_final, sep="\n")
+
+
+3.
+import pandas as pd
+import math
+import numpy as np
+
+data = pd.read_excel("/content/kk3 (1).xlsx")
+features = [feat for feat in data]
+features.remove("answer")
+
+class Node:
+    def __init__(self):
+        self.children = []
+        self.value = ""
+        self.isLeaf = False
+        self.pred = ""
+
+def entropy(examples):
+    pos = 0.0
+    neg = 0.0
+    for _, row in examples.iterrows():
+        if row["answer"] == "yes":
+            pos += 1
+        else:
+            neg += 1
+    if pos == 0.0 or neg == 0.0:
+        return 0.0
+    else:
+        p = pos / (pos + neg)
+        n = neg / (pos + neg)
+        return -(p * math.log(p, 2) + n * math.log(n, 2))
+
+def info_gain(examples, attr):
+    uniq = np.unique(examples[attr])
+    #print ("\n",uniq)
+    gain = entropy(examples)
+    #print ("\n",gain)
+    for u in uniq:
+        subdata = examples[examples[attr] == u]
+        #print ("\n",subdata)
+        sub_e = entropy(subdata)
+        gain -= (float(len(subdata)) / float(len(examples))) * sub_e
+        #print ("\n",gain)
+    return gain
+
+def ID3(examples, attrs):
+    root = Node()
+
+    max_gain = 0
+    max_feat = ""
+    for feature in attrs:
+        #print ("\n",examples)
+        gain = info_gain(examples, feature)
+        if gain > max_gain:
+            max_gain = gain
+            max_feat = feature
+    root.value = max_feat
+    #print ("\nMax feature attr",max_feat)
+    uniq = np.unique(examples[max_feat])
+    #print ("\n",uniq)
+    for u in uniq:
+        #print ("\n",u)
+        subdata = examples[examples[max_feat] == u]
+        #print ("\n",subdata)
+        if entropy(subdata) == 0.0:
+            newNode = Node()
+            newNode.isLeaf = True
+            newNode.value = u
+            newNode.pred = np.unique(subdata["answer"])
+            root.children.append(newNode)
+        else:
+            dummyNode = Node()
+            dummyNode.value = u
+            new_attrs = attrs.copy()
+            new_attrs.remove(max_feat)
+            child = ID3(subdata, new_attrs)
+            dummyNode.children.append(child)
+            root.children.append(dummyNode)
+    return root
+
+def printTree(root: Node, depth=0):
+    for i in range(depth):
+        print("\t", end="")
+    print(root.value, end="")
+    if root.isLeaf:
+        print(" -> ", root.pred)
+    print()
+    for child in root.children:
+        printTree(child, depth + 1)
+
+root = ID3(data, features)
+printTree(root)
+
+
+
+
+4
+import numpy as np
+
+X = np.array(([2, 9], [1, 5], [3, 6]), dtype=float)
+y = np.array(([92], [86], [89]), dtype=float)
+X = X/np.amax(X,axis=0) #maximum of X array longitudinally
+y = y/100
+
+#Sigmoid Function
+def sigmoid (x):
+    return 1/(1 + np.exp(-x))
+
+#Derivative of Sigmoid Function
+def derivatives_sigmoid(x):
+    return x * (1 - x)
+
+#Variable initialization
+epoch=5 #Setting training iterations
+lr=0.1 #Setting learning rate
+
+inputlayer_neurons = 2 #number of features in data set
+hiddenlayer_neurons = 3 #number of hidden layers neurons
+output_neurons = 1 #number of neurons at output layer
+#weight and bias initialization
+
+wh=np.random.uniform(size=(inputlayer_neurons,hiddenlayer_neurons))
+bh=np.random.uniform(size=(1,hiddenlayer_neurons))
+wout=np.random.uniform(size=(hiddenlayer_neurons,output_neurons))
+bout=np.random.uniform(size=(1,output_neurons))
+
+#draws a random range of numbers uniformly of dim x*y
+for i in range(epoch):
+    #Forward Propogation
+    hinp1=np.dot(X,wh)
+    hinp=hinp1 + bh
+    hlayer_act = sigmoid(hinp)
+    outinp1=np.dot(hlayer_act,wout)
+    outinp= outinp1+bout
+    output = sigmoid(outinp)
+
+    #Backpropagation
+    EO = y-output
+    outgrad = derivatives_sigmoid(output)
+    d_output = EO * outgrad
+    EH = d_output.dot(wout.T)
+    hiddengrad = derivatives_sigmoid(hlayer_act)#how much hidden layer wts contributed to error
+    d_hiddenlayer = EH * hiddengrad
+
+    wout += hlayer_act.T.dot(d_output) *lr   # dotproduct of nextlayererror and currentlayerop
+    wh += X.T.dot(d_hiddenlayer) *lr
+
+    print ("-----------Epoch-", i+1, "Starts----------")
+    print("Input: \n" + str(X)) 
+    print("Actual Output: \n" + str(y))
+    print("Predicted Output: \n" ,output)
+    print ("-----------Epoch-", i+1, "Ends----------\n")
+
+print("Input: \n" + str(X)) 
+print("Actual Output: \n" + str(y))
+print("Predicted Output: \n" ,output)
+
+
+
+5.
+# importing the libraries
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+# importing the dataset
+dataset = pd.read_csv("/content/Naive-Bayes-Classification-Data (1).csv")
+
+# split the data into inputs and outputs
+X = dataset.iloc[:, [0,1]].values
+y = dataset.iloc[:, 2].values
+# training and testing data
+from sklearn.model_selection import train_test_split
+
+# assign test data size 25%
+X_train, X_test, y_train, y_test =train_test_split(X,y,test_size= 0.25, random_state=0)
+# importing standard scaler
+from sklearn.preprocessing import StandardScaler
+
+# scalling the input data
+sc_X = StandardScaler() 
+X_train = sc_X.fit_transform(X_train)
+X_test = sc_X.fit_transform(X_test)
+# importing classifier
+from sklearn.naive_bayes import BernoulliNB
+
+# import Gaussian Naive Bayes classifier
+from sklearn.naive_bayes import GaussianNB
+
+# create a Gaussian Classifier
+classifer1 = GaussianNB()
+
+# training the model
+classifer1.fit(X_train, y_train)
+
+# testing the model
+y_pred1 = classifer1.predict(X_test)
+# importing accuracy score
+from sklearn.metrics import accuracy_score
+
+# printing the accuracy of the model
+print(accuracy_score(y_test,y_pred1))
+
+
+
+6.
+# importing the libraries
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+# importing the dataset
+dataset = pd.read_csv("/content/Naive-Bayes-Classification-Data (1).csv")
+
+# split the data into inputs and outputs
+X = dataset.iloc[:, [0,1]].values
+y = dataset.iloc[:, 2].values
+# training and testing data
+from sklearn.model_selection import train_test_split
+
+# assign test data size 25%
+X_train, X_test, y_train, y_test =train_test_split(X,y,test_size= 0.25, random_state=0)
+# importing standard scaler
+from sklearn.preprocessing import StandardScaler
+
+# scalling the input data
+sc_X = StandardScaler() 
+X_train = sc_X.fit_transform(X_train)
+X_test = sc_X.fit_transform(X_test)
+# importing classifier
+from sklearn.naive_bayes import BernoulliNB
+
+# import Gaussian Naive Bayes classifier
+from sklearn.naive_bayes import GaussianNB
+
+# create a Gaussian Classifier
+classifer1 = GaussianNB()
+
+# training the model
+classifer1.fit(X_train, y_train)
+
+# testing the model
+y_pred1 = classifer1.predict(X_test)
+# importing accuracy score
+from sklearn.metrics import accuracy_score
+
+# printing the accuracy of the model
+print(accuracy_score(y_test,y_pred1))
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+print('Accuracy Metrics: \n')
+print('Accuracy: ', accuracy_score(y_test, y_pred1))
+print('Recall: ', recall_score(y_test, y_pred1))
+print('Precision: ', precision_score(y_test, y_pred1))
+print('Confusion Matrix: \n', confusion_matrix(y_test, y_pred1))
+
+
+
+7.
+import numpy as np
+import pandas as pd
+import csv 
+!from pgmpy.estimators import MaximumLikelihoodEstimator
+!from pgmpy.models import BayesianModel
+!from pgmpy.inference import VariableElimination
+
+heartDisease = pd.read_csv("/content/kk7 (1).csv")
+heartDisease = heartDisease.replace('?',np.nan)
+
+print('Sample instances from the dataset are given below')
+print(heartDisease.head())
+
+print('\n Attributes and datatypes')
+print(heartDisease.dtypes)
+
+model= BayesianModel([('age','heartdisease'),('gender','heartdisease'),('exang','heartdisease'),('cp','heartdisease'),('heartdisease','restecg'),('heartdisease','chol')])
+print('\nLearning CPD using Maximum likelihood estimators')
+model.fit(heartDisease,estimator=MaximumLikelihoodEstimator)
+
+print('\n Inferencing with Bayesian Network:')
+HeartDiseasetest_infer = VariableElimination(model)
+
+print('\n 1. Probability of HeartDisease given evidence= restecg')
+q1=HeartDiseasetest_infer.query(variables=['heartdisease'],evidence={'restecg':1})
+print(q1)
+
+print('\n 2. Probability of HeartDisease given evidence= cp ')
+q2=HeartDiseasetest_infer.query(variables=['heartdisease'],evidence={'cp':2})
+print(q2)
+
+
+8.
+from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+import sklearn.metrics as metrics
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+names = ['Sepal_Length','Sepal_Width','Petal_Length','Petal_Width', 'Class']
+
+dataset = pd.read_csv("/content/kk8.csv", names=names)
+X = dataset.iloc[:, :-1]  
+
+label = {'Iris-setosa': 0,'Iris-versicolor': 1, 'Iris-virginica': 2} 
+
+y = [label[c] for c in dataset.iloc[:, -1]]
+
+plt.figure(figsize=(14,7))
+colormap=np.array(['red','lime','black'])
+
+# REAL PLOT
+plt.subplot(1,3,1)
+plt.title('Real')
+plt.scatter(X.Petal_Length,X.Petal_Width,c=colormap[y])
+
+# K-PLOT
+model=KMeans(n_clusters=3, random_state=0).fit(X)
+plt.subplot(1,3,2)
+plt.title('KMeans')
+plt.scatter(X.Petal_Length,X.Petal_Width,c=colormap[model.labels_])
+
+print('The accuracy score of K-Mean: ',metrics.accuracy_score(y, model.labels_))
+print('The Confusion matrixof K-Mean:\n',metrics.confusion_matrix(y, model.labels_))
+
+# GMM PLOT
+gmm=GaussianMixture(n_components=3, random_state=0).fit(X)
+y_cluster_gmm=gmm.predict(X)
+plt.subplot(1,3,3)
+plt.title('GMM Classification')
+plt.scatter(X.Petal_Length,X.Petal_Width,c=colormap[y_cluster_gmm])
+
+print('The accuracy score of EM: ',metrics.accuracy_score(y, y_cluster_gmm))
+print('The Confusion matrix of EM:\n ',metrics.confusion_matrix(y, y_cluster_gmm))
+
+
+9.
+from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+import sklearn.metrics as metrics
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+names = ['Sepal_Length', 'Sepal_Width', 'Petal_Length', 'Petal_Width', 'Class']
+
+dataset = pd.read_csv("/content/kk9.csv", names=names)
+
+X = dataset.iloc[:, :-1]
+
+label = {'Iris-setosa': 0, 'Iris-versicolor': 1, 'Iris-virginica': 2}
+
+y = [label[c] for c in dataset.iloc[:, -1]]
+
+plt.figure(figsize=(14, 7))
+colormap = np.array(['red', 'lime', 'black'])
+
+# REAL PLOT
+plt.subplot(1, 3, 1)
+plt.title('Real')
+plt.scatter(X.Petal_Length, X.Petal_Width, c=colormap[y])
+
+# K-PLOT
+model = KMeans(n_clusters=3, random_state=0).fit(X)
+plt.subplot(1, 3, 2)
+plt.title('KMeans')
+plt.scatter(X.Petal_Length, X.Petal_Width, c=colormap[model.labels_])
+
+print('The accuracy score of K-Mean: ', metrics.accuracy_score(y, model.labels_))
+print('The Confusion matrixof K-Mean:\n', metrics.confusion_matrix(y, model.labels_))
+
+# GMM PLOT
+gmm = GaussianMixture(n_components=3, random_state=0).fit(X)
+y_cluster_gmm = gmm.predict(X)
+plt.subplot(1, 3, 3)
+plt.title('GMM Classification')
+plt.scatter(X.Petal_Length, X.Petal_Width, c=colormap[y_cluster_gmm])
+
+print('The accuracy score of EM: ', metrics.accuracy_score(y, y_cluster_gmm))
+print('The Confusion matrix of EM:\n ', metrics.confusion_matrix(y, y_cluster_gmm))
